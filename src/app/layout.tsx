@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SGMM - Sistema de Gestión de Mantenimiento",
+  title: "MMS Lory",
   description: "Sistema de Gestión de Mantenimiento Metalúrgico",
 };
 
