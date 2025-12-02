@@ -17,8 +17,8 @@ export default function NewAssetPage() {
     const handleSubmit = async (data: any) => {
         setIsSubmitting(true)
         try {
-            const { error } = await supabase
-                .from('assets')
+            const { error } = await (supabase
+                .from('assets') as any)
                 .insert([data])
                 .select()
 

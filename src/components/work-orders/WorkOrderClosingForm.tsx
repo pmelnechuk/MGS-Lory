@@ -109,8 +109,8 @@ export function WorkOrderClosingForm({ workOrderId, onComplete, onCancel }: Work
             const totalPartsCost = parts.reduce((sum, part) => sum + (part.cost * part.quantity), 0)
 
             // 1. Update Work Order
-            const { error: woError } = await supabase
-                .from('work_orders')
+            const { error: woError } = await (supabase
+                .from('work_orders') as any)
                 .update({
                     status: 'completed',
                     completed_at: new Date().toISOString(),
@@ -128,7 +128,7 @@ export function WorkOrderClosingForm({ workOrderId, onComplete, onCancel }: Work
             // 2. Record Parts Usage & Update Inventory
             for (const part of parts) {
                 // Add to work_order_parts
-                await supabase.from('work_order_parts').insert({
+                await (supabase.from('work_order_parts') as any).insert({
                     work_order_id: workOrderId,
                     inventory_item_id: part.itemId,
                     quantity: part.quantity,
@@ -136,7 +136,7 @@ export function WorkOrderClosingForm({ workOrderId, onComplete, onCancel }: Work
                 } as any)
 
                 // Create inventory movement
-                await supabase.from('inventory_movements').insert({
+                await (supabase.from('inventory_movements') as any).insert({
                     item_id: part.itemId,
                     movement_type: 'consumption',
                     quantity: -part.quantity,
@@ -147,8 +147,8 @@ export function WorkOrderClosingForm({ workOrderId, onComplete, onCancel }: Work
                 // Update item stock
                 const item = inventoryItems.find(i => i.id === part.itemId)
                 if (item) {
-                    await supabase
-                        .from('inventory_items')
+                    await (supabase
+                        .from('inventory_items') as any)
                         .update({ quantity: item.quantity - part.quantity } as any)
                         .eq('id', part.itemId)
                 }

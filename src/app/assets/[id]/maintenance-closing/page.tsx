@@ -103,7 +103,7 @@ export default function MaintenanceClosingPage() {
                 .eq('asset_id', assetId)
                 .eq('month', parseInt(selectedMonth))
                 .eq('year', parseInt(selectedYear))
-                .single()
+                .single() as { data: any, error: any }
 
             if (sheet) {
                 setExistingSheetId(sheet.id)

@@ -129,9 +129,9 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                     updates.completed_at = new Date().toISOString()
                 }
 
-                const { error } = await supabase
-                    .from('work_orders')
-                    .update(updates as any)
+                const { error } = await (supabase
+                    .from('work_orders') as any)
+                    .update(updates)
                     .eq('id', activeId)
 
                 if (error) throw error

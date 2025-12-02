@@ -68,8 +68,8 @@ export default function AssetDetailPage() {
 
     const handleImageUpdate = async (url: string) => {
         try {
-            const { error } = await supabase
-                .from('assets')
+            const { error } = await (supabase
+                .from('assets') as any)
                 .update({ image_url: url })
                 .eq('id', id)
 

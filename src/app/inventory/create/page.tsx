@@ -40,9 +40,9 @@ export default function CreateInventoryItemPage() {
         setIsSubmitting(true)
 
         try {
-            const { error } = await supabase
-                .from('inventory_items')
-                .insert([formData] as any)
+            const { error } = await (supabase
+                .from('inventory_items') as any)
+                .insert([formData])
 
             if (error) throw error
 

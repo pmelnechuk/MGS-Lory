@@ -47,8 +47,8 @@ export default function EditAssetPage() {
     const handleSubmit = async (data: any) => {
         setIsSubmitting(true)
         try {
-            const { error } = await supabase
-                .from('assets')
+            const { error } = await (supabase
+                .from('assets') as any)
                 .update(data)
                 .eq('id', id)
 

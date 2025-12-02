@@ -69,12 +69,12 @@ export default function WorkOrderDetailPage() {
 
     const handleStartWork = async () => {
         try {
-            const { error } = await supabase
-                .from('work_orders')
+            const { error } = await (supabase
+                .from('work_orders') as any)
                 .update({
                     status: 'in_progress',
                     started_at: new Date().toISOString()
-                } as any)
+                })
                 .eq('id', id)
 
             if (error) throw error

@@ -69,8 +69,8 @@ export default function InventoryDetailPage() {
         }
 
         try {
-            const { error } = await supabase
-                .from('inventory_items')
+            const { error } = await (supabase
+                .from('inventory_items') as any)
                 .update({ quantity: newQuantity })
                 .eq('id', id)
 

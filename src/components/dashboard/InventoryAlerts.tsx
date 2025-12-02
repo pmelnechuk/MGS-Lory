@@ -36,7 +36,7 @@ export function InventoryAlerts() {
                 if (error) throw error
 
                 // Filter items where quantity <= min_quantity
-                const lowStock = data?.filter(item => item.quantity <= item.min_quantity) || []
+                const lowStock = (data as any[])?.filter(item => item.quantity <= item.min_quantity) || []
                 setLowStockItems(lowStock.slice(0, 5) as LowStockItem[])
             } catch (error) {
                 console.error('Error fetching low stock items:', error)

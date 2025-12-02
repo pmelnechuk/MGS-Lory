@@ -64,8 +64,8 @@ export function MaintenancePlanList({ assetId }: MaintenancePlanListProps) {
     const handleCreate = async (values: TaskFormValues) => {
         setIsSubmitting(true)
         try {
-            const { error } = await supabase
-                .from('maintenance_task_definitions' as any)
+            const { error } = await (supabase
+                .from('maintenance_task_definitions') as any)
                 .insert([{ ...values, asset_id: assetId }])
 
             if (error) throw error
@@ -93,8 +93,8 @@ export function MaintenancePlanList({ assetId }: MaintenancePlanListProps) {
 
         setIsSubmitting(true)
         try {
-            const { error } = await supabase
-                .from('maintenance_task_definitions' as any)
+            const { error } = await (supabase
+                .from('maintenance_task_definitions') as any)
                 .update(values)
                 .eq('id', editingTask.id)
 

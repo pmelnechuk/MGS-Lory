@@ -50,8 +50,8 @@ export function ScheduleMaintenanceDialog({ defaultAssetId, trigger }: ScheduleM
 
         setIsSubmitting(true)
         try {
-            const { error } = await supabase
-                .from('work_orders')
+            const { error } = await (supabase
+                .from('work_orders') as any)
                 .insert({
                     title: title,
                     description: description,

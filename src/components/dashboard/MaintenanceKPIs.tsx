@@ -40,7 +40,7 @@ export function MaintenanceKPIs() {
                 if (error) throw error
 
                 if (workOrders) {
-                    const calculated = getMaintenanceMetrics(workOrders, 30)
+                    const calculated = getMaintenanceMetrics(workOrders as any[], 30)
                     setMetrics({
                         mtbf: calculated.mtbf,
                         mttr: calculated.mttr,

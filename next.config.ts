@@ -11,10 +11,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // @ts-ignore - buildActivity is valid but types might be outdated
-  devIndicators: {
-    buildActivity: false,
-  },
+
+
 };
 
 export default nextConfig;

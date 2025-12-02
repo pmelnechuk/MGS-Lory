@@ -34,9 +34,7 @@ import { Loader2 } from 'lucide-react'
 const formSchema = z.object({
     component: z.string().min(2, 'El componente debe tener al menos 2 caracteres'),
     task: z.string().min(5, 'La tarea debe tener al menos 5 caracteres'),
-    frequency: z.enum(['diario', 'semanal', 'mensual', 'trimestral', 'semestral', 'anual'], {
-        required_error: 'Selecciona una frecuencia',
-    }),
+    frequency: z.enum(['diario', 'semanal', 'mensual', 'trimestral', 'semestral', 'anual']),
 })
 
 export type TaskFormValues = z.infer<typeof formSchema>

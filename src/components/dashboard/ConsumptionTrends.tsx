@@ -32,7 +32,7 @@ export function ConsumptionTrends() {
                 if (error) throw error
 
                 if (movements) {
-                    const trends = getConsumptionTrend(movements, undefined, period)
+                    const trends = getConsumptionTrend(movements as any[], undefined, period)
                     setTrendData(trends)
                 }
             } catch (error) {
