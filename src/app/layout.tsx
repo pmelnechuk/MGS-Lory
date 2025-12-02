@@ -60,12 +60,18 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <div className="flex min-h-screen">
-          <Sidebar profile={profile} />
-          <main className="flex-1 md:ml-64 p-8">
+        {user ? (
+          <div className="flex min-h-screen">
+            <Sidebar profile={profile} />
+            <main className="flex-1 md:ml-64 p-8">
+              {children}
+            </main>
+          </div>
+        ) : (
+          <main className="min-h-screen bg-background">
             {children}
           </main>
-        </div>
+        )}
         <Toaster />
       </body>
     </html>
