@@ -17,8 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { ConsumptionChart } from '@/components/inventory/ConsumptionChart'
-import { TopConsumers } from '@/components/inventory/TopConsumers'
+
 
 const CATEGORY_CONFIG = {
     repuesto: { label: 'Repuestos', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -160,11 +159,7 @@ export default function InventoryPage() {
                 </Card>
             </div>
 
-            {/* Análisis de Consumo */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <ConsumptionChart />
-                <TopConsumers />
-            </div>
+
 
             {/* Filters */}
             <div className="flex flex-col md:flex-row gap-4">

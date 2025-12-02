@@ -140,7 +140,7 @@ export default function AssetsPage() {
 
                     return (
                         <Link key={asset.id} href={`/assets/${asset.id}`}>
-                            <Card className="h-full hover:shadow-md transition-shadow cursor-pointer group overflow-hidden border-l-4" style={{ borderLeftColor: asset.criticality === 3 ? 'var(--destructive)' : 'transparent' }}>
+                            <Card className="h-full hover:shadow-md transition-shadow cursor-pointer group overflow-hidden border-l-4 border-l-transparent">
                                 <div className="relative h-48 w-full bg-muted">
                                     {asset.image_url ? (
                                         <img
@@ -177,13 +177,9 @@ export default function AssetsPage() {
                                     </p>
                                     <div className="flex items-center justify-between mt-auto">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">Criticidad</span>
-                                            <span className={cn(
-                                                "text-sm font-bold",
-                                                asset.criticality === 3 ? "text-destructive" :
-                                                    asset.criticality === 2 ? "text-orange-500" : "text-foreground"
-                                            )}>
-                                                {CRITICALITY_LABELS[asset.criticality]}
+                                            <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">Modelo</span>
+                                            <span className="text-sm font-bold text-foreground">
+                                                {asset.model || 'N/A'}
                                             </span>
                                         </div>
                                     </div>

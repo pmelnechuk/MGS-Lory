@@ -51,10 +51,12 @@ export function AssetForm({ initialData, onSubmit, isSubmitting = false }: Asset
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        // Convert criticality to number
+        // Convert criticality to number and handle empty dates
         const dataToSubmit = {
             ...formData,
-            criticality: parseInt(formData.criticality)
+            criticality: parseInt(formData.criticality),
+            purchase_date: formData.purchase_date || null,
+            warranty_expiry: formData.warranty_expiry || null
         }
         onSubmit(dataToSubmit)
     }
@@ -137,8 +139,8 @@ export function AssetForm({ initialData, onSubmit, isSubmitting = false }: Asset
                             <SelectContent>
                                 <SelectItem value="operational">Operativo</SelectItem>
                                 <SelectItem value="maintenance">En Mantenimiento</SelectItem>
-                                <SelectItem value="broken">Fuera de Servicio</SelectItem>
-                                <SelectItem value="inactive">Inactivo</SelectItem>
+                                <SelectItem value="repair">En Reparación</SelectItem>
+                                <SelectItem value="retired">Retirado</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
