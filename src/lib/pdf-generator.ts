@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+
 
 interface WorkOrderData {
     id: number
@@ -40,237 +40,238 @@ interface WorkOrderPart {
     }
 }
 
+const loadImage = (url: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.src = url
+        img.onload = () => resolve(img)
+        img.onerror = reject
+    })
+}
+
 export async function generateWorkOrderPDF(
     workOrder: WorkOrderData,
     parts?: WorkOrderPart[]
 ) {
-    const doc = new jsPDF()
-
-    let yPosition = 20
-
-    // Header
-    doc.setFontSize(20)
-    doc.setFont('helvetica', 'bold')
-    doc.text('ORDEN DE TRABAJO', 105, yPosition, { align: 'center' })
-
-    yPosition += 10
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`OT #${workOrder.id}`, 105, yPosition, { align: 'center' })
-
-    // Status badge
-    yPosition += 10
-    const statusText = workOrder.status.toUpperCase()
-    doc.setFontSize(10)
-    doc.text(statusText, 105, yPosition, { align: 'center' })
-
-    yPosition += 15
-
-    // General Information Section
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('INFORMACIÓN GENERAL', 14, yPosition)
-    yPosition += 8
-
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-
-    const generalInfo = [
-        ['Título', workOrder.title],
-        ['Tipo', workOrder.type === 'preventive' ? 'Preventivo' : 'Correctivo'],
-        ['Prioridad', workOrder.priority.toUpperCase()],
-        ['Estado', statusText],
-        ['Fecha Creación', new Date(workOrder.created_at).toLocaleString('es-ES')],
-    ]
-
-    if (workOrder.started_at) {
-        generalInfo.push(['Fecha Inicio', new Date(workOrder.started_at).toLocaleString('es-ES')])
-    }
-    if (workOrder.completed_at) {
-        generalInfo.push(['Fecha Finalización', new Date(workOrder.completed_at).toLocaleString('es-ES')])
-    }
-    if (workOrder.assigned_to) {
-        generalInfo.push(['Asignado a', workOrder.assigned_to])
-    }
-    if (workOrder.operators?.full_name) {
-        generalInfo.push(['Operador', workOrder.operators.full_name])
-    }
-
-    autoTable(doc, {
-        startY: yPosition,
-        body: generalInfo,
-        theme: 'plain',
-        styles: { fontSize: 10, cellPadding: 2 },
-        columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 50 },
-            1: { cellWidth: 130 }
-        }
+    const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
     })
 
-    yPosition = (doc as any).lastAutoTable.finalY + 10
-
-    // Asset Information
-    if (workOrder.assets) {
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.text('ACTIVO', 14, yPosition)
-        yPosition += 8
-
-        const assetInfo = [
-            ['Equipo', workOrder.assets.name],
-            ['Ubicación', workOrder.assets.location || 'N/A'],
-            ['Modelo', workOrder.assets.model || 'N/A'],
-        ]
-
-        autoTable(doc, {
-            startY: yPosition,
-            body: assetInfo,
-            theme: 'plain',
-            styles: { fontSize: 10, cellPadding: 2 },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 50 },
-                1: { cellWidth: 130 }
-            }
-        })
-
-        yPosition = (doc as any).lastAutoTable.finalY + 10
+    // Load Logo
+    let logoImg: HTMLImageElement | null = null
+    try {
+        logoImg = await loadImage('/lory-logo-full.png')
+    } catch (e) {
+        console.error('Error loading logo', e)
     }
 
-    // Description
-    if (workOrder.description) {
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.text('DESCRIPCIÓN DEL PROBLEMA', 14, yPosition)
-        yPosition += 6
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 10
+    const topMargin = 20 // Perforations
+    const contentWidth = pageWidth - (margin * 2)
 
+    // --- 1. HEADER (Y=20 to 50, Height=30) ---
+    const headerY = topMargin
+    const headerH = 30
+
+    // Main Box
+    doc.setLineWidth(0.3)
+    doc.rect(margin, headerY, contentWidth, headerH)
+
+    // Vertical Dividers
+    const col1W = 50
+    const col2W = 90
+    const col3W = contentWidth - col1W - col2W // 50
+
+    doc.line(margin + col1W, headerY, margin + col1W, headerY + headerH)
+    doc.line(margin + col1W + col2W, headerY, margin + col1W + col2W, headerY + headerH)
+
+    // Left: Logo
+    if (logoImg) {
+        const imgRatio = logoImg.width / logoImg.height
+        const maxH = 20
+        const maxW = 40
+        let w = maxW
+        let h = w / imgRatio
+        if (h > maxH) {
+            h = maxH
+            w = h * imgRatio
+        }
+        const x = margin + (col1W - w) / 2
+        const y = headerY + (headerH - h) / 2
+        doc.addImage(logoImg, 'PNG', x, y, w, h)
+    } else {
         doc.setFontSize(10)
-        doc.setFont('helvetica', 'normal')
-        const splitDescription = doc.splitTextToSize(workOrder.description, 180)
-        doc.text(splitDescription, 14, yPosition)
-        yPosition += (splitDescription.length * 5) + 10
+        doc.text('LORY', margin + col1W / 2, headerY + headerH / 2, { align: 'center' })
     }
 
-    // Solution Notes
-    if (workOrder.solution_notes) {
-        // Check if we need a new page
-        if (yPosition > 250) {
-            doc.addPage()
-            yPosition = 20
-        }
+    // Center: Info
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    const centerX = margin + col1W + (col2W / 2)
+    let centerY = headerY + 8
+    doc.text('ANEXO 1-REG-HRR-SGC', centerX, centerY, { align: 'center' })
+    centerY += 7
+    doc.setFontSize(12)
+    doc.text('Historial de Revisiones y Reparaciones', centerX, centerY, { align: 'center' })
+    centerY += 7
+    doc.setFontSize(9)
+    doc.text('Sistema de Gestión de Calidad ISO 9001', centerX, centerY, { align: 'center' })
 
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.text('SOLUCIÓN APLICADA', 14, yPosition)
-        yPosition += 6
+    // Right: Control Data
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    const rightX = margin + col1W + col2W + 2
+    let rightY = headerY + 8
 
-        doc.setFontSize(10)
-        doc.setFont('helvetica', 'normal')
-        const splitSolution = doc.splitTextToSize(workOrder.solution_notes, 180)
-        doc.text(splitSolution, 14, yPosition)
-        yPosition += (splitSolution.length * 5) + 10
-    }
+    doc.text(`Página: 1/1`, rightX, rightY)
+    rightY += 8
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, rightX, rightY)
+    rightY += 8
+    doc.text(`Versión: 02`, rightX, rightY)
 
-    // Parts Used
-    if (parts && parts.length > 0) {
-        if (yPosition > 230) {
-            doc.addPage()
-            yPosition = 20
-        }
 
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.text('REPUESTOS UTILIZADOS', 14, yPosition)
-        yPosition += 6
+    // --- 2. EQUIPMENT ROW (Y=50 to 60, Height=10) ---
+    const row2Y = headerY + headerH
+    const row2H = 10
+    doc.rect(margin, row2Y, contentWidth, row2H)
 
-        const partsData = parts.map(part => [
-            part.inventory_items?.name || 'N/A',
-            part.inventory_items?.sku || 'N/A',
-            `${part.quantity_used} ${part.inventory_items?.unit || ''}`,
-            `$${part.unit_cost.toFixed(2)}`,
-            `$${(part.quantity_used * part.unit_cost).toFixed(2)}`
-        ])
+    // Dividers
+    // Celda 1 (Ancha): EQUIPO... | MES:
+    // Celda 2 (Mediana): AÑO:
+    // Celda 3 (Estrecha): ID
 
-        autoTable(doc, {
-            startY: yPosition,
-            head: [['Repuesto', 'SKU', 'Cantidad', 'Costo Unit.', 'Total']],
-            body: partsData,
-            theme: 'grid',
-            headStyles: { fillColor: [66, 66, 66], fontSize: 10 },
-            styles: { fontSize: 9, cellPadding: 3 },
-            columnStyles: {
-                3: { halign: 'right' },
-                4: { halign: 'right' }
+    // Let's split: 60% - 20% - 20%
+    const r2c1W = contentWidth * 0.60
+    const r2c2W = contentWidth * 0.20
+
+    doc.line(margin + r2c1W, row2Y, margin + r2c1W, row2Y + row2H)
+    doc.line(margin + r2c1W + r2c2W, row2Y, margin + r2c1W + r2c2W, row2Y + row2H)
+
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
+
+    // Cell 1
+    const assetName = workOrder.assets?.name || '________________'
+    const currentMonth = new Date(workOrder.created_at).toLocaleString('es-ES', { month: 'long' }).toUpperCase()
+    doc.text(`EQUIPO Y/O MAQUINA: ${assetName}`, margin + 2, row2Y + 4)
+    doc.text(`MES: ${currentMonth}`, margin + 2, row2Y + 8.5)
+
+    // Cell 2
+    const currentYear = new Date().getFullYear()
+    doc.text(`AÑO: ${currentYear}`, margin + r2c1W + 2, row2Y + 6)
+
+    // Cell 3
+    doc.text(`IDENTIFICACION:`, margin + r2c1W + r2c2W + 2, row2Y + 4)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`${workOrder.assets?.model || 'N/A'}`, margin + r2c1W + r2c2W + 2, row2Y + 8)
+
+
+    // --- 3. MAIN BODY (Table) ---
+    const bodyY = row2Y + row2H
+    const footerHeight = 35 // Approx space for footer (Signatures only)
+    const bodyBottom = pageHeight - margin - footerHeight
+    const bodyH = bodyBottom - bodyY
+
+    doc.rect(margin, bodyY, contentWidth, bodyH)
+
+    // Column Divider (80% / 20%)
+    const bodyCol1W = contentWidth * 0.80
+    doc.line(margin + bodyCol1W, bodyY, margin + bodyCol1W, bodyY + bodyH)
+
+    // Header Row
+    const bodyHeaderH = 8
+    doc.line(margin, bodyY + bodyHeaderH, margin + contentWidth, bodyY + bodyHeaderH)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('DETALLE TAREA / REVISION', margin + (bodyCol1W / 2), bodyY + 5, { align: 'center' })
+    doc.text('FECHA Y TIEMPO', margin + bodyCol1W + ((contentWidth - bodyCol1W) / 2), bodyY + 3.5, { align: 'center' })
+    doc.text('DE LA TAREA', margin + bodyCol1W + ((contentWidth - bodyCol1W) / 2), bodyY + 7, { align: 'center' })
+
+    // Content Lines
+    const lineH = 7
+    let currentY = bodyY + bodyHeaderH + lineH
+
+    // Pre-fill with OT Data
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+
+    const fullDescription = `[${workOrder.type.toUpperCase()}] ${workOrder.title}\n${workOrder.description || ''}\n${workOrder.solution_notes ? 'SOLUCIÓN: ' + workOrder.solution_notes : ''}`
+
+    // Split text to fit column 1
+    const textLines = doc.splitTextToSize(fullDescription, bodyCol1W - 4)
+
+    let textIdx = 0
+
+    while (currentY < bodyBottom) {
+        doc.line(margin, currentY, margin + contentWidth, currentY)
+
+        // Draw text if available
+        if (textIdx < textLines.length) {
+            doc.text(textLines[textIdx], margin + 2, currentY - 2)
+            textIdx++
+
+            // Draw date on first line only
+            if (textIdx === 1) {
+                const dateStr = new Date(workOrder.created_at).toLocaleDateString('es-ES')
+                doc.text(dateStr, margin + bodyCol1W + 2, currentY - 2)
             }
-        })
+        }
 
-        yPosition = (doc as any).lastAutoTable.finalY + 10
+        currentY += lineH
     }
 
-    // Metrics Section
-    if (workOrder.downtime_hours || workOrder.labor_hours || workOrder.parts_cost || workOrder.labor_cost) {
-        if (yPosition > 230) {
-            doc.addPage()
-            yPosition = 20
-        }
 
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.text('MÉTRICAS Y COSTOS', 14, yPosition)
-        yPosition += 6
+    // --- 4. FOOTER ---
+    const footerY = bodyBottom
 
-        const metricsData = []
+    // B. Signatures (Height 35)
+    const sigY = footerY
+    const sigH = 35
+    doc.rect(margin, sigY, contentWidth, sigH)
 
-        if (workOrder.downtime_hours) {
-            metricsData.push(['Tiempo de Inactividad', `${workOrder.downtime_hours} horas`])
-        }
-        if (workOrder.labor_hours) {
-            metricsData.push(['Horas de Trabajo', `${workOrder.labor_hours} horas`])
-        }
-        if (workOrder.parts_cost) {
-            metricsData.push(['Costo de Repuestos', `$${workOrder.parts_cost.toFixed(2)}`])
-        }
-        if (workOrder.labor_cost) {
-            metricsData.push(['Costo de Mano de Obra', `$${workOrder.labor_cost.toFixed(2)}`])
-        }
-        if (workOrder.parts_cost && workOrder.labor_cost) {
-            metricsData.push(['COSTO TOTAL', `$${(workOrder.parts_cost + workOrder.labor_cost).toFixed(2)}`])
-        }
+    // Split Signatures
+    const sigMid = contentWidth / 2
+    doc.line(margin + sigMid, sigY, margin + sigMid, sigY + sigH)
 
-        autoTable(doc, {
-            startY: yPosition,
-            body: metricsData,
-            theme: 'plain',
-            styles: { fontSize: 10, cellPadding: 2 },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 70 },
-                1: { cellWidth: 110, halign: 'right' }
-            }
-        })
+    // Left: ELABORO
+    let ly = sigY + 4
+    doc.text('ELABORO', margin + 2, ly)
 
-        yPosition = (doc as any).lastAutoTable.finalY + 10
-    }
+    ly += 8
+    doc.setFont('helvetica', 'normal')
+    doc.text('FIRMA: __________________________', margin + 5, ly)
+    ly += 6
+    doc.text(`ACLARACION: ${workOrder.operators?.full_name || '____________________'}`, margin + 5, ly)
+    ly += 6
+    doc.text('CARGO: __________________________', margin + 5, ly)
+    ly += 6
+    doc.text('FECHA: __________________________', margin + 5, ly)
 
-    // Footer
-    const pageCount = doc.getNumberOfPages()
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i)
-        doc.setFontSize(8)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(128, 128, 128)
-        doc.text(
-            `Generado el ${new Date().toLocaleString('es-ES')}`,
-            105,
-            285,
-            { align: 'center' }
-        )
-        doc.text(
-            `Página ${i} de ${pageCount}`,
-            105,
-            290,
-            { align: 'center' }
-        )
-    }
+    doc.setFont('helvetica', 'bold')
+    // doc.text('OPERARIO', margin + (sigMid / 2), sigY + sigH - 2, { align: 'center' })
 
-    // Save the PDF
-    doc.save(`OT-${workOrder.id}-${new Date().toISOString().split('T')[0]}.pdf`)
+    // Right: APROBO
+    let ry = sigY + 4
+    doc.text('APROBO', margin + sigMid + 2, ry)
+
+    ry += 8
+    doc.setFont('helvetica', 'normal')
+    doc.text('FIRMA: __________________________', margin + sigMid + 5, ry)
+    ry += 6
+    doc.text('ACLARACION: ____________________', margin + sigMid + 5, ry)
+    ry += 6
+    doc.text('CARGO: __________________________', margin + sigMid + 5, ry)
+    ry += 6
+    doc.text('FECHA: __________________________', margin + sigMid + 5, ry)
+
+    doc.setFont('helvetica', 'bold')
+    // doc.text('RESPONSABLE DE TALLER', margin + sigMid + (sigMid / 2), sigY + sigH - 2, { align: 'center' })
+
+    // Save
+    doc.save(`OT-${workOrder.id}.pdf`)
 }
