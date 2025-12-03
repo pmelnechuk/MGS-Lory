@@ -96,7 +96,7 @@ export default function WorkOrderDetailPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+        <div className={cn("mx-auto space-y-6 animate-in fade-in duration-500", isCompleting ? "max-w-7xl" : "max-w-4xl")}>
             {/* Header */}
             <div className="flex items-center gap-4">
                 <Link href="/work-orders">

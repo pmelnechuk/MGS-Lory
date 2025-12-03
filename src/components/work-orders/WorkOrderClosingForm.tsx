@@ -75,7 +75,7 @@ export function WorkOrderClosingForm({ workOrderId, initialData, onComplete, onC
     const handleAddPart = () => {
         if (!selectedItem) return
 
-        const item = inventoryItems.find(i => i.id === selectedItem)
+        const item = inventoryItems.find(i => i.id.toString() === selectedItem)
         if (!item) return
 
         const qty = parseFloat(partQuantity)
