@@ -126,36 +126,60 @@ export default function WorkOrderDetailPage() {
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Description Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Detalles del Trabajo</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <h3 className="font-semibold text-lg">{workOrder.title}</h3>
-                                <p className="text-muted-foreground mt-2 leading-relaxed">
-                                    {workOrder.description}
-                                </p>
-                            </div>
-
-                            {workOrder.solution_notes && (
-                                <div className="bg-green-50 border border-green-100 rounded-lg p-4 mt-4">
-                                    <h4 className="font-semibold text-green-800 mb-2">Solución Aplicada</h4>
-                                    <p className="text-green-700">{workOrder.solution_notes}</p>
+            {/* Dynamic Layout based on mode */}
+            {isCompleting ? (
+                // Full Width Closing Mode
+                <div className="w-full">
+                    <WorkOrderClosingForm
+                        workOrderId={workOrder.id}
+                        initialData={workOrder}
+                        onComplete={() => {
+                            setIsCompleting(false)
+                            // Refresh order data
+                            const fetchOrder = async () => {
+                                const { data } = await supabase
+                                    .from('work_orders')
+                                    .select('*, assets(*)')
+                                    .eq('id', id)
+                                    .single()
+                                if (data) setWorkOrder(data)
+                            }
+                            fetchOrder()
+                        }}
+                        onCancel={() => setIsCompleting(false)}
+                    />
+                </div>
+            ) : (
+                // Standard Detail View
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Content */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Description Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Detalles del Trabajo</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <h3 className="font-semibold text-lg">{workOrder.title}</h3>
+                                    <p className="text-muted-foreground mt-2 leading-relaxed">
+                                        {workOrder.description}
+                                    </p>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
 
-                    {/* Execution Actions */}
-                    {workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
-                        <Card className="border-primary/20 bg-primary/5">
-                            <CardContent className="p-6">
-                                {!isCompleting ? (
+                                {workOrder.solution_notes && (
+                                    <div className="bg-green-50 border border-green-100 rounded-lg p-4 mt-4">
+                                        <h4 className="font-semibold text-green-800 mb-2">Solución Aplicada</h4>
+                                        <p className="text-green-700">{workOrder.solution_notes}</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Execution Actions */}
+                        {workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
+                            <Card className="border-primary/20 bg-primary/5">
+                                <CardContent className="p-6">
                                     <div className="flex gap-4">
                                         {workOrder.status === 'pending' || workOrder.status === 'approved' ? (
                                             <Button onClick={handleStartWork} size="lg" className="w-full">
@@ -169,85 +193,66 @@ export default function WorkOrderDetailPage() {
                                             </Button>
                                         )}
                                     </div>
-                                ) : (
-                                    <WorkOrderClosingForm
-                                        workOrderId={workOrder.id}
-                                        onComplete={() => {
-                                            setIsCompleting(false)
-                                            // Refresh order data
-                                            const fetchOrder = async () => {
-                                                const { data } = await supabase
-                                                    .from('work_orders')
-                                                    .select('*, assets(*)')
-                                                    .eq('id', id)
-                                                    .single()
-                                                if (data) setWorkOrder(data)
-                                            }
-                                            fetchOrder()
-                                        }}
-                                        onCancel={() => setIsCompleting(false)}
-                                    />
-                                )}
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+
+                    {/* Sidebar Info */}
+                    <div className="space-y-6">
+                        {/* Asset Info */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Activo</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-start gap-4">
+                                    <div className="h-12 w-12 rounded-md bg-muted overflow-hidden">
+                                        {asset?.image_url && <img src={asset.image_url} alt="" className="h-full w-full object-cover" />}
+                                    </div>
+                                    <div>
+                                        <Link href={`/assets/${asset?.id}`} className="font-semibold hover:underline">
+                                            {asset?.name}
+                                        </Link>
+                                        <p className="text-sm text-muted-foreground">{asset?.location}</p>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
-                    )}
-                </div>
 
-                {/* Sidebar Info */}
-                <div className="space-y-6">
-                    {/* Asset Info */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Activo</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-start gap-4">
-                                <div className="h-12 w-12 rounded-md bg-muted overflow-hidden">
-                                    {asset?.image_url && <img src={asset.image_url} alt="" className="h-full w-full object-cover" />}
+                        {/* Metadata */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Información</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <User className="h-4 w-4 text-muted-foreground" />
+                                        <span>Asignado a:</span>
+                                    </div>
+                                    <span className="font-medium">{workOrder.assigned_to || 'Sin asignar'}</span>
                                 </div>
-                                <div>
-                                    <Link href={`/assets/${asset?.id}`} className="font-semibold hover:underline">
-                                        {asset?.name}
-                                    </Link>
-                                    <p className="text-sm text-muted-foreground">{asset?.location}</p>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                                        <span>Creada:</span>
+                                    </div>
+                                    <span className="font-medium">{new Date(workOrder.created_at!).toLocaleDateString()}</span>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Metadata */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Información</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                    <span>Asignado a:</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                                        <span>Prioridad:</span>
+                                    </div>
+                                    <Badge variant={workOrder.priority === 'high' ? 'destructive' : 'secondary'}>
+                                        {workOrder.priority?.toUpperCase()}
+                                    </Badge>
                                 </div>
-                                <span className="font-medium">{workOrder.assigned_to || 'Sin asignar'}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <span>Creada:</span>
-                                </div>
-                                <span className="font-medium">{new Date(workOrder.created_at!).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                                    <span>Prioridad:</span>
-                                </div>
-                                <Badge variant={workOrder.priority === 'high' ? 'destructive' : 'secondary'}>
-                                    {workOrder.priority?.toUpperCase()}
-                                </Badge>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
-            </div>
-        </div>
+            )}        </div>
     )
 }

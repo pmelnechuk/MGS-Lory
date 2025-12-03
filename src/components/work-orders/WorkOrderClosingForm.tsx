@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import {
     Select,
     SelectContent,
@@ -14,10 +15,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Plus, Trash2, Search, User, Clock, DollarSign, Wrench } from 'lucide-react'
+import { Plus, Trash2, Search, User, Clock, DollarSign, Wrench, Calendar, AlertTriangle } from 'lucide-react'
 
 interface WorkOrderClosingFormProps {
     workOrderId: number
+    initialData: any
     onComplete: () => void
     onCancel: () => void
 }
@@ -30,7 +32,7 @@ interface PartUsage {
     unit: string
 }
 
-export function WorkOrderClosingForm({ workOrderId, onComplete, onCancel }: WorkOrderClosingFormProps) {
+export function WorkOrderClosingForm({ workOrderId, initialData, onComplete, onCancel }: WorkOrderClosingFormProps) {
     const [solutionNotes, setSolutionNotes] = useState('')
     const [downtimeHours, setDowntimeHours] = useState('0')
     const [laborHours, setLaborHours] = useState('0')
@@ -168,87 +170,123 @@ export function WorkOrderClosingForm({ workOrderId, onComplete, onCancel }: Work
     )
 
     return (
-        <div className="space-y-6 animate-in slide-in-from-top-2">
+        <div className="space-y-4 animate-in slide-in-from-top-2">
+            {/* Top Header: Metadata */}
+            <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Asignado:</span>
+                        <span className="font-medium">{initialData.assigned_to || 'Sin asignar'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Creada:</span>
+                        <span className="font-medium">{new Date(initialData.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Prioridad:</span>
+                        <Badge variant={initialData.priority === 'high' ? 'destructive' : 'secondary'} className="h-5 text-xs">
+                            {initialData.priority?.toUpperCase()}
+                        </Badge>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={onCancel} disabled={isSubmitting}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={isSubmitting} size="sm" className="bg-green-600 hover:bg-green-700">
+                        {isSubmitting ? 'Guardando...' : 'Confirmar Finalización'}
+                    </Button>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Details & Operator */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                {/* Left Column: Form (70%) */}
+                <div className="lg:col-span-2 space-y-4">
+                    <Card className="h-full">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
                                 <Wrench className="h-5 w-5 text-primary" />
-                                Detalles de Ejecución
+                                Informe Técnico
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Operario Responsable</Label>
-                                <Select value={selectedOperator} onValueChange={setSelectedOperator}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleccionar operario..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {operators.map(op => (
-                                            <SelectItem key={op.id} value={op.id.toString()}>
-                                                {op.full_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Notas de Solución</Label>
-                                <Textarea
-                                    placeholder="Describe detalladamente la solución aplicada..."
-                                    value={solutionNotes}
-                                    onChange={(e) => setSolutionNotes(e.target.value)}
-                                    className="min-h-[150px]"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Clock className="h-5 w-5 text-primary" />
-                                Métricas de Tiempo y Costo
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <CardContent className="space-y-6">
+                            {/* Operator & Notes */}
+                            <div className="grid gap-4">
                                 <div className="space-y-2">
-                                    <Label>Tiempo Inactividad (hrs)</Label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        step="0.5"
-                                        value={downtimeHours}
-                                        onChange={(e) => setDowntimeHours(e.target.value)}
+                                    <Label>Operario Responsable</Label>
+                                    <Select value={selectedOperator} onValueChange={setSelectedOperator}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar operario..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {operators.map(op => (
+                                                <SelectItem key={op.id} value={op.id.toString()}>
+                                                    {op.full_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Descripción de la Solución</Label>
+                                    <Textarea
+                                        placeholder="Describe detalladamente el trabajo realizado..."
+                                        value={solutionNotes}
+                                        onChange={(e) => setSolutionNotes(e.target.value)}
+                                        className="min-h-[120px] resize-none"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Horas Hombre</Label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        step="0.5"
-                                        value={laborHours}
-                                        onChange={(e) => setLaborHours(e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Costo Mano de Obra ($)</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={laborCost}
-                                            onChange={(e) => setLaborCost(e.target.value)}
-                                            className="pl-9"
-                                        />
+                            </div>
+
+                            {/* Metrics Row */}
+                            <div className="pt-4 border-t">
+                                <Label className="mb-3 block text-sm font-semibold text-muted-foreground">Métricas de Ejecución</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Tiempo Inactividad (hrs)</Label>
+                                        <div className="relative">
+                                            <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.5"
+                                                value={downtimeHours}
+                                                onChange={(e) => setDowntimeHours(e.target.value)}
+                                                className="pl-9 h-9"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Horas Hombre</Label>
+                                        <div className="relative">
+                                            <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.5"
+                                                value={laborHours}
+                                                onChange={(e) => setLaborHours(e.target.value)}
+                                                className="pl-9 h-9"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Costo Mano de Obra ($)</Label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={laborCost}
+                                                onChange={(e) => setLaborCost(e.target.value)}
+                                                className="pl-9 h-9"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -256,119 +294,110 @@ export function WorkOrderClosingForm({ workOrderId, onComplete, onCancel }: Work
                     </Card>
                 </div>
 
-                {/* Right Column: Spare Parts */}
-                <div className="space-y-6">
-                    <Card className="h-full">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                {/* Right Column: Spare Parts (30%) */}
+                <div className="space-y-4">
+                    <Card className="h-full flex flex-col">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
                                 <Wrench className="h-5 w-5 text-primary" />
-                                Repuestos Utilizados
+                                Repuestos
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="bg-slate-50 p-4 rounded-lg border space-y-3">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-medium">Buscar Repuesto</Label>
+                        <CardContent className="flex-1 flex flex-col gap-4">
+                            {/* Controls */}
+                            <div className="space-y-3 bg-slate-50 p-3 rounded-lg border">
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium">Buscar</Label>
                                     <div className="relative">
-                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                                         <Input
                                             placeholder="Filtrar..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="pl-8 h-9 bg-white"
+                                            className="pl-8 h-8 bg-white text-sm"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-medium">Seleccionar Ítem</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium">Ítem</Label>
                                     <select
-                                        className="w-full h-9 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                        className="w-full h-8 rounded-md border border-input bg-white px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         value={selectedItem}
                                         onChange={(e) => setSelectedItem(e.target.value)}
                                     >
                                         <option value="">Seleccionar...</option>
                                         {filteredItems.map(item => (
                                             <option key={item.id} value={item.id}>
-                                                {item.name} (Stock: {item.quantity})
+                                                {item.name} ({item.quantity})
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
                                 <div className="flex gap-2 items-end">
-                                    <div className="flex-1 space-y-2">
-                                        <Label className="text-xs font-medium">Cantidad</Label>
+                                    <div className="flex-1 space-y-1.5">
+                                        <Label className="text-xs font-medium">Cant.</Label>
                                         <Input
                                             type="number"
                                             min="0.1"
                                             step="0.1"
                                             value={partQuantity}
                                             onChange={(e) => setPartQuantity(e.target.value)}
-                                            className="h-9 bg-white"
+                                            className="h-8 bg-white"
                                         />
                                     </div>
-                                    <Button onClick={handleAddPart} size="sm" className="h-9 w-9 p-0">
+                                    <Button onClick={handleAddPart} size="sm" className="h-8 w-8 p-0">
                                         <Plus className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium text-muted-foreground">Ítems Agregados</Label>
+                            {/* List */}
+                            <div className="flex-1 min-h-[200px] space-y-2 overflow-y-auto pr-1">
                                 {parts.length === 0 ? (
-                                    <div className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-lg">
-                                        No se han agregado repuestos
+                                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
+                                        Sin repuestos
                                     </div>
                                 ) : (
-                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                                        {parts.map((part, index) => (
-                                            <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg border shadow-sm text-sm group">
-                                                <div>
-                                                    <div className="font-medium">{part.itemName}</div>
-                                                    <div className="text-muted-foreground text-xs mt-1">
-                                                        {part.quantity} {part.unit} x ${part.cost}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-semibold">
-                                                        ${(part.quantity * part.cost).toFixed(2)}
-                                                    </span>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleRemovePart(index)}
-                                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                    parts.map((part, index) => (
+                                        <div key={index} className="flex items-center justify-between bg-white p-2.5 rounded-lg border shadow-sm text-sm group">
+                                            <div className="overflow-hidden">
+                                                <div className="font-medium truncate" title={part.itemName}>{part.itemName}</div>
+                                                <div className="text-muted-foreground text-xs">
+                                                    {part.quantity} {part.unit} x ${part.cost}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {parts.length > 0 && (
-                                    <div className="flex justify-between items-center pt-4 border-t mt-4">
-                                        <span className="font-medium">Total Repuestos</span>
-                                        <span className="text-lg font-bold text-primary">
-                                            ${parts.reduce((sum, p) => sum + (p.cost * p.quantity), 0).toFixed(2)}
-                                        </span>
-                                    </div>
+                                            <div className="flex items-center gap-2 pl-2">
+                                                <span className="font-semibold text-xs">
+                                                    ${(part.quantity * part.cost).toFixed(2)}
+                                                </span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleRemovePart(index)}
+                                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))
                                 )}
                             </div>
+
+                            {/* Total */}
+                            {parts.length > 0 && (
+                                <div className="flex justify-between items-center pt-3 border-t">
+                                    <span className="font-medium text-sm">Total</span>
+                                    <span className="text-base font-bold text-primary">
+                                        ${parts.reduce((sum, p) => sum + (p.cost * p.quantity), 0).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
-            </div>
-
-            <div className="flex gap-3 justify-end pt-6 border-t">
-                <Button variant="outline" size="lg" onClick={onCancel} disabled={isSubmitting}>
-                    Cancelar
-                </Button>
-                <Button onClick={handleSubmit} disabled={isSubmitting} size="lg" className="bg-green-600 hover:bg-green-700 min-w-[200px]">
-                    {isSubmitting ? 'Guardando...' : 'Confirmar Finalización'}
-                </Button>
             </div>
         </div>
     )
